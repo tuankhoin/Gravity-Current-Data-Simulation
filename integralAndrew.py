@@ -1,3 +1,15 @@
+import numpy as np
+from tqdm import tqdm
+from pymech.exadata import exadata, elem
+import pandas as pd
+import quadpy
+from pymech.neksuite import readnek
+from pymech.neksuite import writenek
+
+def stacked_sum(var, (z,y,x)):
+        return np.sum(np.sum(np.sum(var*z,axis=0)*y,axis=0)*x)
+
+filename='..\Mesh0110_1p50.f00008'
 field=readnek(filename)
 
 nel=field.nel
@@ -17,7 +29,7 @@ TotalKineticEnergy=0.0
 for n in np.arange(nel):
         ax=field.elem[n].pos[0,0,0,0]
         bx=field.elem[n].pos[0,0,0,-1]
-        wxprime=w*((bx-ax)/2.0)
+        x=w*((bx-ax)/2.0)
 
         ay=field.elem[n].pos[1,0,0,0]
         by=field.elem[n].pos[1,0,-1,0]
@@ -28,13 +40,14 @@ for n in np.arange(nel):
         wzprime=w*((bz-az)/2.0)
 
         temp=field.elem[n].vel[0,:,:,:]
-        kineticenergy=0.5*(field.elem[n].vel[0,:,:,:]*field.elem[n].vel[0,:,:,:]+field.elem[n].vel[1,:,:,:]*field.elem[n].vel[1,:,:,:]+field.elem[n].vel[2,:,:,:]*field.elem[n].vel[2,:,:,:])
+        kineticenergy = 0.5*sum([field.elem[n].vel[i,:,:,:]**2 for i in [0,1,2]])
 
-        #tempu=np.sum(np.ones(temp.shape)*wzprime[:,np.newaxis,np.newaxis],axis=0)
-        TotalVol=TotalVol+np.sum(np.sum(np.sum(np.ones(temp.shape)*wzprime[:,np.newaxis,np.newaxis],axis=0)*wyprime[:,np.newaxis],axis=0)*wxprime)     
-        TotalMass=TotalMass+np.sum(np.sum(np.sum(field.elem[n].temp[0,:,:,:]*wzprime[:,np.newaxis,np.newaxis],axis=0)*wyprime[:,np.newaxis],axis=0)*wxprime)
-        TotalPotentialEnergy=TotalPotentialEnergy+np.sum(np.sum(np.sum(field.elem[n].temp[0,:,:,:]*field.elem[n].pos[1,:,:,:]*wzprime[:,np.newaxis,np.newaxis],axis=0)*wyprime[:,np.newaxis],axis=0)*wxprime)
-        TotalKineticEnergy=TotalKineticEnergy+np.sum(np.sum(np.sum(kineticenergy*wzprime[:,np.newaxis,np.newaxis],axis=0)*wyprime[:,np.newaxis],axis=0)*wxprime)
+        zyx = (wzprime[:,np.newaxis,np.newaxis], wyprime[:,np.newaxis], wxprime)
+
+        TotalVol += stacked_sum(np.ones(temp.shape), zyx)
+        TotalMass += stacked_sum(field.elem[n].temp[0,:,:,:], zyx)       
+        TotalPotentialEnergy += stacked_sum(field.elem[n].temp[0,:,:,:]*field.elem[n].pos[1,:,:,:], zyx)        
+        TotalKineticEnergy += stacked_sum(kineticenergy, zyx)
 
  
 

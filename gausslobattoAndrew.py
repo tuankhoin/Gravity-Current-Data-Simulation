@@ -40,12 +40,7 @@ le=0
 
  
 
-#
-
 #Finding centroid of the macro elements to sort the data
-
-#
-
 for n in np.arange(nel):
     index[n]=int(n)
     xdata[n]=np.around((data.elem[n].pos[0,0,0,0]+data.elem[n].pos[0,0,0,lr1[0]-1])/2.0,decimals=3)
