@@ -6,14 +6,13 @@ import quadpy
 from pymech.neksuite import readnek
 from pymech.neksuite import writenek
 
-def stacked_sum(var, (z,y,x)):
+def stacked_sum(var, zyx):
+        z,y,x = zyx
         return np.sum(np.sum(np.sum(var*z,axis=0)*y,axis=0)*x)
 
-filename='..\Mesh0110_1p50.f00008'
+filename='..\\Mesh0110_1p50.f00008'
 field=readnek(filename)
-
 nel=field.nel
-
 lr1=field.lr1
 
 scheme = quadpy.c1.gauss_lobatto(field.lr1[2])
@@ -29,7 +28,7 @@ TotalKineticEnergy=0.0
 for n in np.arange(nel):
         ax=field.elem[n].pos[0,0,0,0]
         bx=field.elem[n].pos[0,0,0,-1]
-        x=w*((bx-ax)/2.0)
+        wxprime=w*((bx-ax)/2.0)
 
         ay=field.elem[n].pos[1,0,0,0]
         by=field.elem[n].pos[1,0,-1,0]
@@ -48,8 +47,6 @@ for n in np.arange(nel):
         TotalMass += stacked_sum(field.elem[n].temp[0,:,:,:], zyx)       
         TotalPotentialEnergy += stacked_sum(field.elem[n].temp[0,:,:,:]*field.elem[n].pos[1,:,:,:], zyx)        
         TotalKineticEnergy += stacked_sum(kineticenergy, zyx)
-
- 
 
 print(TotalVol)
 print(TotalMass)
